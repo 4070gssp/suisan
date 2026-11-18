@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>廃棄ロス管理 本部画面</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+  :root{
+    --paper:#E9EEEB;
+    --sheet:#FFFFFF;
+    --ink:#15211B;
+    --muted:#5E6B65;
+    --line:#CFD8D3;
+    --green:#0E7A45;
+    --green-soft:#DDF0E5;
+    --red:#C0362C;
+    --red-soft:#F8E1DE;
+    --amber:#9A6200;
+    --amber-soft:#FBEFD6;
+    --sans:'BIZ UDPGothic', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    --mono:'JetBrains Mono', ui-monospace, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.6;}
+  button,input{font:inherit; color:inherit;}
+  button{cursor:pointer;}
+  :focus-visible{outline:3px solid var(--green); outline-offset:2px;}
+  .mono{font-family:var(--mono);}
+  .hidden{display:none !important;}
+
+  /* ---- login ---- */
+  .login{min-height:100vh; display:grid; place-items:center; padding:24px;}
+  .login form{background:var(--sheet); border:1px solid var(--line); border-radius:6px; padding:32px; width:100%; max-width:380px;}
+  .login h1{font-size:20px; margin:0 0 6px;}
+  .login p{color:var(--muted); font-size:13.5px; margin:0 0 22px;}
+  .login label{display:block; font-size:13px; font-weight:700; margin-bottom:6px;}
+  .login input{width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:4px; margin-bottom:16px; background:#fff;}
+  .login .err{color:var(--red); font-size:13px; min-height:20px; margin:-8px 0 8px;}
+
+  /* ---- layout ---- */
+  .top{background:var(--ink); color:#fff; padding:14px 28px; display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  .top h1{font-size:17px; margin:0; font-weight:700;}
+  .top .conn{font-size:12.5px; color:#A9BBB2; margin-right:auto;}
+  .top button{background:transparent; border:1px solid #4A5A52; color:#fff; border-radius:4px; padding:6px 12px; font-size:13px;}
+  .top button:hover{border-color:#fff;}
+
+  main{max-width:1180px; margin:0 auto; padding:28px 28px 120px;}
+  .head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px;}
+  .head h2{font-size:22px; margin:0;}
+  .head p{margin:4px 0 0; color:var(--muted); font-size:13.5px; max-width:640px;}
+  .head .tools{display:flex; gap:8px; flex-wrap:wrap;}
+
+  .btn{border:1px solid var(--line); background:var(--sheet); border-radius:4px; padding:8px 14px; font-size:13.5px; font-weight:700;}
+  .btn:hover{border-color:var(--ink);}
+  .btn-primary{background:var(--green); border-color:var(--green); color:#fff;}
+  .btn-primary:hover{background:#0A6236; border-color:#0A6236;}
+  .btn-primary:disabled{background:#9FB8AB; border-color:#9FB8AB; cursor:default;}
+  .btn-sm{padding:4px 10px; font-size:12.5px; font-weight:400;}
+
+  /* ---- store ledger ---- */
+  .ledger-wrap{background:var(--sheet); border:1px solid var(--line); border-radius:6px; overflow-x:auto;}
+  table{width:100%; border-collapse:collapse; min-width:900px;}
+  th{text-align:left; font-size:12.5px; color:var(--muted); font-weight:700; padding:10px 12px; border-bottom:2px solid var(--ink); white-space:nowrap; background:var(--sheet); position:sticky; top:0;}
+  td{padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr.is-off td:not(.c-status):not(.c-order){opacity:.45;}
+  tr.is-changed{background:var(--amber-soft);}
+  tr.is-new{background:var(--green-soft);}
+  th.num, td.num{text-align:right; font-family:var(--mono); font-size:13.5px;}
+  td.num .zero{color:#B3BDB8;}
+
+  .c-order{width:64px; white-space:nowrap;}
+  .c-order button{width:26px; height:26px; border:1px solid var(--line); background:#fff; border-radius:3px; padding:0; font-size:11px; color:var(--muted);}
+  .c-order button:hover:not(:disabled){border-color:var(--ink); color:var(--ink);}
+  .c-order button:disabled{opacity:.3; cursor:default;}
+  .c-code input{width:84px;}
+  .c-name input{width:100%; min-width:180px;}
+  td input[type=text]{border:1px solid transparent; background:transparent; border-radius:3px; padding:6px 8px;}
+  td input[type=text]:hover{border-color:var(--line);}
+  td input[type=text]:focus{border-color:var(--green); background:#fff; outline:none; box-shadow:0 0 0 3px var(--green-soft);}
+  td input[readonly]{color:var(--muted); pointer-events:none;}
+  .c-code input{font-family:var(--mono); font-size:13.5px;}
+
+  .toggle{display:inline-flex; align-items:center; gap:8px; border:none; background:none; padding:4px 0; font-size:13px; white-space:nowrap;}
+  .toggle .track{width:34px; height:20px; border-radius:10px; background:#C5CEC9; position:relative; transition:background .15s;}
+  .toggle .track::after{content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform .15s;}
+  .toggle[aria-pressed="true"] .track{background:var(--green);}
+  .toggle[aria-pressed="true"] .track::after{transform:translateX(14px);}
+
+  .c-url{white-space:nowrap;}
+  .c-url .url{font-family:var(--mono); font-size:11.5px; color:var(--muted); display:inline-block; max-width:220px; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; margin-right:6px;}
+
+  .add-row{display:flex; gap:8px; padding:12px; border-top:1px dashed var(--line); background:#FAFBFA; flex-wrap:wrap; align-items:center;}
+  .add-row input{border:1px solid var(--line); border-radius:4px; padding:7px 10px; background:#fff;}
+  .add-row .code{width:110px; font-family:var(--mono);}
+  .add-row .name{flex:1; min-width:180px;}
+
+  .note{margin-top:14px; color:var(--muted); font-size:13px;}
+
+  /* ---- save bar: the one loud element ---- */
+  .savebar{position:fixed; left:0; right:0; bottom:0; background:var(--ink); color:#fff; transform:translateY(100%); transition:transform .2s ease;}
+  .savebar.show{transform:translateY(0);}
+  .savebar .in{max-width:1180px; margin:0 auto; padding:14px 28px; display:flex; align-items:center; gap:14px;}
+  .savebar .msg{margin-right:auto; font-size:14.5px;}
+  .savebar .msg b{font-family:var(--mono); font-size:18px; color:#FFD27A; margin:0 2px;}
+  .savebar .btn{border-color:#4A5A52; background:transparent; color:#fff;}
+  .savebar .btn-primary{background:var(--green); border-color:var(--green);}
+
+  /* ---- QR dialog ---- */
+  dialog{border:none; border-radius:6px; padding:28px; max-width:360px; width:calc(100% - 32px); text-align:center;}
+  dialog::backdrop{background:rgba(21,33,27,.55);}
+  dialog h3{margin:0 0 2px; font-size:20px;}
+  dialog .code{font-family:var(--mono); color:var(--muted); font-size:13px;}
+  dialog .qr{margin:16px auto 10px; width:220px;}
+  dialog .qr svg{width:100%; height:auto; display:block;}
+  dialog .u{font-family:var(--mono); font-size:11px; color:var(--muted); word-break:break-all; margin-bottom:18px;}
+  dialog .row{display:flex; gap:8px; justify-content:center;}
+
+  #toast{position:fixed; top:18px; left:50%; transform:translate(-50%,-140%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:4px; font-size:14px; transition:transform .2s; z-index:50;}
+  #toast.show{transform:translate(-50%,0);}
+  #toast.error{background:var(--red);}
+
+  /* ---- print: QR cards for every active store ---- */
+  #printArea{display:none;}
+  @media print{
+    @page{size:A4; margin:12mm;}
+    body{background:#fff;}
+    body > *:not(#printArea){display:none !important;}
+    #printArea{display:grid; grid-template-columns:repeat(3, 1fr); gap:8mm;}
+    .card{border:1px dashed #999; padding:6mm; text-align:center; break-inside:avoid;}
+    .card .t{font-size:9pt; color:#555;}
+    .card .n{font-size:16pt; font-weight:700; margin:1mm 0 3mm;}
+    .card svg{width:42mm; height:42mm;}
+    .card .c{font-family:var(--mono); font-size:8pt; color:#555; margin-top:2mm;}
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+  @media (max-width:640px){ main{padding:20px 14px 120px;} .top{padding:12px 14px;} .savebar .in{padding:12px 14px;} }
+</style>
+</head>
+<body>
+
+<!-- ログイン -->
+<section class="login" id="loginView">
+  <form id="loginForm">
+    <h1>廃棄ロス管理 本部画面</h1>
+    <p>店舗名の変更や店舗用URLの発行を行います。</p>
+    <label for="pw">管理パスワード</label>
+    <input type="password" id="pw" autocomplete="current-password" required>
+    <div class="err" id="loginErr"></div>
+    <button class="btn btn-primary" type="submit" style="width:100%;">ログイン</button>
+  </form>
+</section>
+
+<!-- 管理画面 -->
+<div id="appView" class="hidden">
+  <header class="top">
+    <h1>廃棄ロス管理 本部画面</h1>
+    <span class="conn" id="conn">スプレッドシートに接続済み</span>
+    <button id="logoutBtn">ログアウト</button>
+  </header>
+
+  <main>
+    <div class="head">
+      <div>
+        <h2>店舗マスタ</h2>
+        <p>ここで変えた店舗名は、各店舗のツールを次に開いたときに反映されます。過去の記録は店舗コードで集計できるので、店名を変えても数字は途切れません。</p>
+      </div>
+      <div class="tools">
+        <button class="btn" id="reloadBtn">最新を読み込む</button>
+        <button class="btn" id="printBtn">QRコードを印刷</button>
+      </div>
+    </div>
+
+    <div class="ledger-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>並び</th>
+            <th>店舗コード</th>
+            <th>店舗名</th>
+            <th>状態</th>
+            <th class="num">本日</th>
+            <th class="num">7日間</th>
+            <th>店舗用URL</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="add-row">
+        <input class="code" id="newCode" placeholder="店舗コード" aria-label="新しい店舗コード">
+        <input class="name" id="newName" placeholder="店舗名（例：駅前店）" aria-label="新しい店舗名">
+        <button class="btn" id="addBtn">店舗を追加</button>
+      </div>
+    </div>
+    <p class="note">本日・7日間は廃棄数量の合計です。店舗を「停止」にすると、その店舗のURLを開いても記録できなくなります（過去の記録は残ります）。店舗コードは保存後に変更できません。</p>
+  </main>
+
+  <div class="savebar" id="savebar">
+    <div class="in">
+      <span class="msg">未保存の変更が <b id="dirtyCount">0</b> 件あります</span>
+      <button class="btn" id="discardBtn">変更を取り消す</button>
+      <button class="btn btn-primary" id="saveBtn">保存する</button>
+    </div>
+  </div>
+</div>
+
+<dialog id="qrDialog">
+  <h3 id="qrName"></h3>
+  <div class="code" id="qrCode"></div>
+  <div class="qr" id="qrBox"></div>
+  <div class="u" id="qrUrl"></div>
+  <div class="row">
+    <button class="btn" id="qrCopy">URLをコピー</button>
+    <button class="btn" id="qrClose">閉じる</button>
+  </div>
+</dialog>
+
+<div id="printArea"></div>
+<div id="toast" role="status"></div>
+
+<script>
+/* ============================================================
+   設定：店舗ツール（index.html）と同じ GAS の /exec URL を入れてください
+============================================================ */
+const GAS_URL =https://script.google.com/macros/s/AKfycbyir2YnGtColrDOpMpzduW2jGTTNGuilLlDqOiY0VJFa5s8GQgHJZpfleALimzXvgNMeg/exec
+const GAS_READY = /^https:\/\/script\.google\.com\/.+\/exec$/.test(GAS_URL);
+// 店舗ツールのURL。空なら admin.html と同じ場所の index.html を使います
+const TOOL_URL = "";
+
+const toolBase = TOOL_URL || new URL('index.html', location.href).href.split('?')[0];
+const $ = id => document.getElementById(id);
+let password = sessionStorage.getItem('haiki_admin_pw') || '';
+let saved = [];     // サーバー上の状態
+let draft = [];     // 編集中の状態
+let summary = {};
+
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function storeUrl(code){ return `${toolBase}?store=${encodeURIComponent(code)}`; }
+function toast(msg, isErr){
+  const t = $('toast'); t.textContent = msg; t.classList.toggle('error', !!isErr); t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+async function api(action, extra){
+  if (!GAS_READY) throw Object.assign(new Error('admin.html の GAS_URL が未設定です。GASのウェブアプリURL（…/exec）を貼り付けてください。'), { fromServer:true });
+  let data;
+  try {
+    const res = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action, password, ...extra }) });
+    data = await res.json();
+  } catch(e){
+    throw new Error('接続できませんでした。GASのURLとデプロイ設定（アクセス：全員）を確認してください。');
+  }
+  if (!data.ok) throw Object.assign(new Error(data.error || 'エラーが発生しました'), { fromServer:true });
+  return data;
+}
+
+/* ---- login ---- */
+$('loginForm').onsubmit = async e => {
+  e.preventDefault();
+  password = $('pw').value;
+  $('loginErr').textContent = '';
+  try {
+    await loadAll();
+    sessionStorage.setItem('haiki_admin_pw', password);
+    showApp();
+  } catch(err){
+    $('loginErr').textContent = err.message;
+  }
+};
+$('logoutBtn').onclick = () => { sessionStorage.removeItem('haiki_admin_pw'); location.reload(); };
+
+function showApp(){ $('loginView').classList.add('hidden'); $('appView').classList.remove('hidden'); }
+
+async function loadAll(){
+  const [list, sum] = await Promise.all([api('adminList'), api('adminSummary')]);
+  saved = list.stores.map(s => ({...s, isNew:false}));
+  draft = saved.map(s => ({...s}));
+  summary = sum.summary || {};
+  render();
+}
+
+/* ---- diff ---- */
+function changedRows(){
+  const byCode = Object.fromEntries(saved.map((s, i) => [s.code, {...s, idx:i}]));
+  return draft.map((d, i) => {
+    const o = byCode[d.code];
+    if (!o) return 'new';
+    if (o.name !== d.name || o.active !== d.active || o.idx !== i) return 'changed';
+    return '';
+  });
+}
+
+function render(){
+  const states = changedRows();
+  $('rows').innerHTML = draft.map((s, i) => {
+    const sm = summary[s.code] || { today:0, week:0 };
+    const cls = [s.active ? '' : 'is-off', states[i] === 'new' ? 'is-new' : states[i] === 'changed' ? 'is-changed' : ''].join(' ');
+    const num = n => n ? n.toLocaleString() : '<span class="zero">0</span>';
+    return `<tr class="${cls}" data-i="${i}">
+      <td class="c-order">
+        <button data-act="up" ${i===0?'disabled':''} aria-label="上へ">▲</button>
+        <button data-act="down" ${i===draft.length-1?'disabled':''} aria-label="下へ">▼</button>
+      </td>
+      <td class="c-code"><input type="text" value="${esc(s.code)}" readonly aria-label="店舗コード"></td>
+      <td class="c-name"><input type="text" value="${esc(s.name)}" data-act="name" aria-label="店舗名"></td>
+      <td class="c-status">
+        <button class="toggle" data-act="toggle" aria-pressed="${s.active}"><span class="track"></span>${s.active ? '受付中' : '停止'}</button>
+      </td>
+      <td class="num">${num(sm.today)}</td>
+      <td class="num">${num(sm.week)}</td>
+      <td class="c-url">
+        <span class="url" title="${esc(storeUrl(s.code))}">${esc(storeUrl(s.code))}</span>
+        <button class="btn btn-sm" data-act="copy">コピー</button>
+        <button class="btn btn-sm" data-act="qr">QR</button>
+      </td>
+    </tr>`;
+  }).join('');
+  const dirty = states.filter(Boolean).length + saved.filter(s => !draft.some(d => d.code === s.code)).length;
+  $('dirtyCount').textContent = dirty;
+  $('savebar').classList.toggle('show', dirty > 0);
+}
+
+/* ---- table events ---- */
+$('rows').addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]'); if (!btn) return;
+  const i = +btn.closest('tr').dataset.i;
+  const act = btn.dataset.act;
+  if (act === 'up' && i > 0){ [draft[i-1], draft[i]] = [draft[i], draft[i-1]]; render(); }
+  if (act === 'down' && i < draft.length-1){ [draft[i+1], draft[i]] = [draft[i], draft[i+1]]; render(); }
+  if (act === 'toggle'){ draft[i].active = !draft[i].active; render(); }
+  if (act === 'copy'){ navigator.clipboard.writeText(storeUrl(draft[i].code)).then(() => toast(`${draft[i].name} のURLをコピーしました`)); }
+  if (act === 'qr'){ openQr(draft[i]); }
+});
+$('rows').addEventListener('change', e => {
+  if (e.target.dataset.act !== 'name') return;
+  const i = +e.target.closest('tr').dataset.i;
+  const v = e.target.value.trim();
+  if (!v){ toast('店舗名は空にできません', true); e.target.value = draft[i].name; return; }
+  draft[i].name = v; render();
+});
+
+$('addBtn').onclick = () => {
+  const code = $('newCode').value.trim(), name = $('newName').value.trim();
+  if (!code || !name){ toast('店舗コードと店舗名を入力してください', true); return; }
+  if (!/^[A-Za-z0-9_-]+$/.test(code)){ toast('店舗コードは半角英数字で入力してください', true); return; }
+  if (draft.some(s => s.code === code)){ toast('その店舗コードはすでにあります', true); return; }
+  draft.push({ code, name, active:true });
+  $('newCode').value = ''; $('newName').value = '';
+  render();
+};
+$('newName').addEventListener('keydown', e => { if (e.key === 'Enter') $('addBtn').click(); });
+
+$('discardBtn').onclick = () => { draft = saved.map(s => ({...s})); render(); toast('変更を取り消しました'); };
+$('saveBtn').onclick = async () => {
+  $('saveBtn').disabled = true; $('saveBtn').textContent = '保存中…';
+  try {
+    const r = await api('adminSave', { stores: draft.map(({code, name, active}) => ({code, name, active})) });
+    saved = r.stores; draft = saved.map(s => ({...s}));
+    render(); toast('保存しました。各店舗のツールに反映されます');
+  } catch(err){ toast(err.message, true); }
+  $('saveBtn').disabled = false; $('saveBtn').textContent = '保存する';
+};
+$('reloadBtn').onclick = async () => {
+  try { await loadAll(); toast('最新の状態を読み込みました'); } catch(err){ toast(err.message, true); }
+};
+
+/* ---- QR ---- */
+function qrSvg(text, cell){
+  const q = qrcode(0, 'M'); q.addData(text); q.make();
+  return q.createSvgTag({ cellSize: cell || 6, margin: 2, scalable: true });
+}
+function openQr(s){
+  $('qrName').textContent = s.name;
+  $('qrCode').textContent = s.code;
+  $('qrBox').innerHTML = qrSvg(storeUrl(s.code));
+  $('qrUrl').textContent = storeUrl(s.code);
+  $('qrCopy').onclick = () => navigator.clipboard.writeText(storeUrl(s.code)).then(() => toast('URLをコピーしました'));
+  $('qrDialog').showModal();
+}
+$('qrClose').onclick = () => $('qrDialog').close();
+
+$('printBtn').onclick = () => {
+  const list = saved.filter(s => s.active);
+  $('printArea').innerHTML = list.map(s => `<div class="card">
+      <div class="t">廃棄ロス管理ツール</div>
+      <div class="n">${esc(s.name)}</div>
+      ${qrSvg(storeUrl(s.code), 4)}
+      <div class="c">${esc(s.code)}</div>
+    </div>`).join('');
+  window.print();
+};
+
+window.addEventListener('beforeunload', e => { if ($('savebar').classList.contains('show')){ e.preventDefault(); e.returnValue = ''; } });
+
+/* ---- auto login within session ---- */
+if (password){ loadAll().then(showApp).catch(() => sessionStorage.removeItem('haiki_admin_pw')); }
+</script>
+</body>
+</html>
